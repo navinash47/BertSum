@@ -49,8 +49,12 @@ class Bert(nn.Module):
             self.model = BertModel(bert_config)
 
     def forward(self, x, segs, mask):
-        encoded_layers, _ = self.model(x, segs, attention_mask =mask)
+        encoded_layers, _ = self.model(x, segs, attention_mask=mask)
+        # print("encoded layers: ", encoded_layers)
         top_vec = encoded_layers[-1]
+        # top_vec = encoded_layers
+        # for layer in encoded_layers:
+        #     print(layer)
         return top_vec
 
 
@@ -90,8 +94,18 @@ class Summarizer(nn.Module):
 
     def forward(self, x, segs, clss, mask, mask_cls, sentence_range=None):
 
+        # tot_top_vec = self.bert(x, segs, mask)
+        # tot_sent_scores = list()
+        # for top_vec in tot_top_vec:
+        #     sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]
+        #     sents_vec = sents_vec * mask_cls[:,:, None].float()
+        #     sent_scores = self.encoder(sents_vec, mask_cls).squeeze(-1)
+        #     tot_sent_scores.append(sent_scores)
+        # return tot_sent_scores, mask_cls
+
         top_vec = self.bert(x, segs, mask)
+        # print("top_vec:", top_vec)
         sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]
-        sents_vec = sents_vec * mask_cls[:, :, None].float()
+        sents_vec = sents_vec * mask_cls[:,:, None].float()
         sent_scores = self.encoder(sents_vec, mask_cls).squeeze(-1)
         return sent_scores, mask_cls

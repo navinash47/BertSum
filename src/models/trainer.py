@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 from tensorboardX import SummaryWriter
+from nltk.tokenize import word_tokenize
 
 import distributed
 # import onmt
@@ -64,7 +65,6 @@ def build_trainer(args, device_id, model,
 class Trainer(object):
     """
     Class that controls the training process.
-
     Args:
             model(:py:class:`onmt.models.model.NMTModel`): translation model
                 to train
@@ -110,7 +110,6 @@ class Trainer(object):
         The main training loops.
         by iterating over training data (i.e. `train_iter_fct`)
         and running validation (i.e. iterating over `valid_iter_fct`
-
         Args:
             train_iter_fct(function): a function that returns the train
                 iterator. e.g. something like
@@ -119,7 +118,6 @@ class Trainer(object):
             train_steps(int):
             valid_steps(int):
             save_checkpoint_steps(int):
-
         Return:
             None
         """
@@ -233,10 +231,26 @@ class Trainer(object):
 
         can_path = '%s_step%d.candidate'%(self.args.result_path,step)
         gold_path = '%s_step%d.gold' % (self.args.result_path, step)
+
+        # Load the word count	
+        summary_count_file_path = '/content/drive/My Drive/Colab Datasets/BertSum/INDIA/Summary_Length_India.txt'	
+        summary_count_list = []	
+        filename_list = []	
+        with open(summary_count_file_path) as summary_count_file:	
+            line = summary_count_file.readline()	
+            while line != '':	
+                summary_count = int((line.split())[-1])	
+                filename = (line.split())[0]	
+                summary_count_list.append(summary_count)	
+                filename_list.append(filename)	
+                line = summary_count_file.readline()
+
         with open(can_path, 'w') as save_pred:
             with open(gold_path, 'w') as save_gold:
                 with torch.no_grad():
+                    file_count = 0
                     for batch in test_iter:
+                        print("----------------------------------------")
                         src = batch.src
                         labels = batch.labels
                         segs = batch.segs
@@ -279,7 +293,13 @@ class Trainer(object):
                                 else:
                                     _pred.append(candidate)
 
-                                if ((not cal_oracle) and (not self.args.recall_eval) and len(_pred) == 3):
+                                word_count = 0
+                                for sent in _pred:
+                                    # print("sent in _pred:", sent)
+                                    word_count += len(word_tokenize(sent))
+
+                                if ((not cal_oracle) and (not self.args.recall_eval) and (word_count >= summary_count_list[file_count])):
+                                    print("BREAKING ++++++++++++++++")
                                     break
 
                             _pred = '<q>'.join(_pred)
@@ -287,12 +307,25 @@ class Trainer(object):
                                 _pred = ' '.join(_pred.split()[:len(batch.tgt_str[i].split())])
 
                             pred.append(_pred)
+                            tot_word_count = 0
+                            tot_sent_count = 0
+                            for sent in pred:
+                                tot_sent_count += len(sent.split('<q>'))
+                                tot_word_count += len(word_tokenize(sent))
+
+                            print("TOTAL WORDS REQUIRED", filename_list[file_count], ":", summary_count_list[file_count])
+                            print("WORDS EXTRACTED:", tot_word_count)
+                            print("SENTENCES EXTRACTED:", tot_sent_count)
+
                             gold.append(batch.tgt_str[i])
 
                         for i in range(len(gold)):
-                            save_gold.write(gold[i].strip()+'\n')
+                            save_gold.write(gold[i].strip() + '\n')
+                        save_pred.write(str(filename_list[file_count]) + '[SEP]')
                         for i in range(len(pred)):
+                            print("WRITING SENTENCES", filename_list[file_count])
                             save_pred.write(pred[i].strip()+'\n')
+                        file_count += 1
         if(step!=-1 and self.args.report_rouge):
             rouges = test_rouge(self.args.temp_dir, can_path, gold_path)
             logger.info('Rouges at step %d \n%s' % (step, rouge_results_to_str(rouges)))
@@ -387,11 +420,9 @@ class Trainer(object):
     def _maybe_gather_stats(self, stat):
         """
         Gather statistics in multi-processes cases
-
         Args:
             stat(:obj:onmt.utils.Statistics): a Statistics object to gather
                 or None (it returns None in this case)
-
         Returns:
             stat: the updated (or unchanged) stat object
         """

@@ -205,6 +205,7 @@ def format_to_bert(args):
     for corpus_type in datasets:
         a_lst = []
         for json_f in glob.glob(pjoin(args.raw_path, '*' + corpus_type + '.*.json')):
+        # for json_f in glob.glob(pjoin(args.raw_path, '*' + '.story.json')):
             real_name = json_f.split('/')[-1]
             a_lst.append((json_f, args, pjoin(args.save_path, real_name.replace('json', 'bert.pt'))))
         print(a_lst)
@@ -275,23 +276,64 @@ def _format_to_bert(params):
     gc.collect()
 
 
+# def format_to_lines(args):
+#     corpus_mapping = {}
+#     for corpus_type in ['valid', 'test', 'train']:
+#         temp = []
+#         for line in open(pjoin(args.map_path, 'mapping_' + corpus_type + '.txt')):
+#             temp.append(hashhex(line.strip()))
+#         corpus_mapping[corpus_type] = {key.strip(): 1 for key in temp}
+#     train_files, valid_files, test_files = [], [], []
+#     for f in glob.glob(pjoin(args.raw_path, '*.json')):
+#         real_name = f.split('/')[-1].split('.')[0]
+#         if (real_name in corpus_mapping['valid']):
+#             valid_files.append(f)
+#         elif (real_name in corpus_mapping['test']):
+#             test_files.append(f)
+#         elif (real_name in corpus_mapping['train']):
+#             train_files.append(f)
+
+#     corpora = {'train': train_files, 'valid': valid_files, 'test': test_files}
+#     for corpus_type in ['train', 'valid', 'test']:
+#         a_lst = [(f, args) for f in corpora[corpus_type]]
+#         pool = Pool(args.n_cpus)
+#         dataset = []
+#         p_ct = 0
+#         for d in pool.imap_unordered(_format_to_lines, a_lst):
+#             dataset.append(d)
+#             if (len(dataset) > args.shard_size):
+#                 pt_file = "{:s}.{:s}.{:d}.json".format(args.save_path, corpus_type, p_ct)
+#                 with open(pt_file, 'w') as save:
+#                     # save.write('\n'.join(dataset))
+#                     save.write(json.dumps(dataset))
+#                     p_ct += 1
+#                     dataset = []
+
+#         pool.close()
+#         pool.join()
+#         if (len(dataset) > 0):
+#             pt_file = "{:s}.{:s}.{:d}.json".format(args.save_path, corpus_type, p_ct)
+#             with open(pt_file, 'w') as save:
+#                 # save.write('\n'.join(dataset))
+#                 save.write(json.dumps(dataset))
+#                 p_ct += 1
+#                 dataset = []
+
 def format_to_lines(args):
-    corpus_mapping = {}
-    for corpus_type in ['valid', 'test', 'train']:
-        temp = []
-        for line in open(pjoin(args.map_path, 'mapping_' + corpus_type + '.txt')):
-            temp.append(hashhex(line.strip()))
-        corpus_mapping[corpus_type] = {key.strip(): 1 for key in temp}
     train_files, valid_files, test_files = [], [], []
     for f in glob.glob(pjoin(args.raw_path, '*.json')):
-        real_name = f.split('/')[-1].split('.')[0]
-        if (real_name in corpus_mapping['valid']):
-            valid_files.append(f)
-        elif (real_name in corpus_mapping['test']):
-            test_files.append(f)
-        elif (real_name in corpus_mapping['train']):
-            train_files.append(f)
-
+        # v = random.choices(['train', 'valid' , 'test'], [0.7, 0.2, 0.1])
+        # if v[0] == 'train':
+        #     #<70% of the time>
+        #     train_files.append(f)
+        # elif v[0] == 'valid':
+        #     #<20% of the time>
+        #     valid_files.append(f)
+        # else:
+        #     #<10% of the time>
+        #     test_files.append(f)
+        train_files.append(f)
+            
     corpora = {'train': train_files, 'valid': valid_files, 'test': test_files}
     for corpus_type in ['train', 'valid', 'test']:
         a_lst = [(f, args) for f in corpora[corpus_type]]
@@ -303,6 +345,7 @@ def format_to_lines(args):
             if (len(dataset) > args.shard_size):
                 pt_file = "{:s}.{:s}.{:d}.json".format(args.save_path, corpus_type, p_ct)
                 with open(pt_file, 'w') as save:
+                    print("pt_file", pt_file)
                     # save.write('\n'.join(dataset))
                     save.write(json.dumps(dataset))
                     p_ct += 1
@@ -313,6 +356,7 @@ def format_to_lines(args):
         if (len(dataset) > 0):
             pt_file = "{:s}.{:s}.{:d}.json".format(args.save_path, corpus_type, p_ct)
             with open(pt_file, 'w') as save:
+                print("pt_file", pt_file)
                 # save.write('\n'.join(dataset))
                 save.write(json.dumps(dataset))
                 p_ct += 1
@@ -321,6 +365,6 @@ def format_to_lines(args):
 
 def _format_to_lines(params):
     f, args = params
-    print(f)
+    # print("f", f)
     source, tgt = load_json(f, args.lower)
     return {'src': source, 'tgt': tgt}
