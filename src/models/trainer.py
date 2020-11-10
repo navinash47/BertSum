@@ -252,11 +252,36 @@ class Trainer(object):
                     for batch in test_iter:
                         print("----------------------------------------")
                         src = batch.src
+                        # print("src", type(src))
+                        # print(src.shape)
+                        # for i, x in enumerate(src):
+                        #     print(x)
                         labels = batch.labels
+                        # print("labels", type(labels))
+                        # print(labels.shape)
+                        # for i, x in enumerate(labels):
+                        #     print(x)
                         segs = batch.segs
+                        # print("segs", type(segs))
+                        # print(segs.shape)
+                        # for i, x in enumerate(segs):
+                        #     print(x)
                         clss = batch.clss
+                        # print("clss", type(clss))
+                        # print(clss.shape)
+                        # for i, x in enumerate(clss):
+                        #     print(x)
                         mask = batch.mask
+                        # print("mask", type(mask))
+                        # print(mask.shape)
+                        # for i, x in enumerate(mask):
+                        #     print(x)
                         mask_cls = batch.mask_cls
+                        # type("mask_cls", type(mask_cls))
+                        # print(mask_cls.shape)
+                        # for i, x in enumerate(mask_cls):
+                        #     print(x)
+
 
 
                         gold = []
@@ -281,6 +306,7 @@ class Trainer(object):
                         # selected_ids = np.sort(selected_ids,1)
                         for i, idx in enumerate(selected_ids):
                             _pred = []
+                            print("#sentences in test file", len(batch.src_str[i]))
                             if(len(batch.src_str[i])==0):
                                 continue
                             for j in selected_ids[i][:len(batch.src_str[i])]:

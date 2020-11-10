@@ -24,6 +24,11 @@ class Batch(object):
             pre_segs = [x[2] for x in data]
             pre_clss = [x[3] for x in data]
 
+            # print("pre_src", pre_src)
+            # print("pre_labels", pre_labels)
+            # print("pre_segs", pre_segs)
+            # print("pre_clss", pre_clss)
+
             src = torch.tensor(self._pad(pre_src, 0))
 
             labels = torch.tensor(self._pad(pre_labels, 0))
@@ -81,12 +86,14 @@ def load_dataset(args, corpus_type, shuffle):
 
     def _lazy_dataset_loader(pt_file, corpus_type):
         dataset = torch.load(pt_file)
+        # print(pt, "pt's torch dataset", dataset)
         logger.info('Loading %s dataset from %s, number of examples: %d' %
                     (corpus_type, pt_file, len(dataset)))
         return dataset
 
     # Sort the glob output by file name (by increasing indexes).
     pts = sorted(glob.glob(args.bert_data_path + '.' + corpus_type + '.[0-9]*.pt'))
+    # print("pts", pts)
     if pts:
         if (shuffle):
             random.shuffle(pts)
